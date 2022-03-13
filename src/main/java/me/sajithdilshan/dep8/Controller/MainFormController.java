@@ -29,24 +29,16 @@ public class MainFormController {
     public Button btnSave;
 
 
-    Path dbPath = Paths.get("backup/customers.dep8");
 
+   final static Path dbPath = Paths.get("backup/customers.dep8");
+   private Button btnDelete;
 
     public void initialize() {
         tblCustomers.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("id"));
         tblCustomers.getColumns().get(1).setCellValueFactory(new PropertyValueFactory<>("name"));
         tblCustomers.getColumns().get(2).setCellValueFactory(new PropertyValueFactory<>("address"));
-        TableColumn<CustomerTM, Button> lastCol =
-                (TableColumn<CustomerTM, Button>) tblCustomers.getColumns().get(3);
 
-        lastCol.setCellValueFactory(param -> {
-            Button btnDelete = new Button("Delete");
-
-            btnDelete.setOnAction((event -> tblCustomers.getItems().remove(param.getValue())));
-            return new ReadOnlyObjectWrapper<>(btnDelete);
-        });
-
-        TableColumn<CustomerTM, ImageView> colPicture = (TableColumn<CustomerTM, ImageView>) tblCustomers.getColumns().get(1);
+        TableColumn<CustomerTM, ImageView> colPicture = (TableColumn<CustomerTM, ImageView>) tblCustomers.getColumns().get(3);
 
         colPicture.setCellValueFactory(param -> {
             byte[] picture = param.getValue().getPicture();
@@ -56,6 +48,16 @@ public class MainFormController {
             imageView.setFitHeight(75);
             imageView.setFitWidth(75);
             return new ReadOnlyObjectWrapper<>(imageView);
+        });
+
+        TableColumn<CustomerTM, Button> lastCol =
+                (TableColumn<CustomerTM, Button>) tblCustomers.getColumns().get(4);
+
+        lastCol.setCellValueFactory(param -> {
+            btnDelete = new Button("Delete");
+
+            btnDelete.setOnAction((event -> tblCustomers.getItems().remove(param.getValue())));
+            return new ReadOnlyObjectWrapper<>(btnDelete);
         });
 
         loadTable();
@@ -69,6 +71,7 @@ public class MainFormController {
 
 
             txtId.setText(selectedCustomer.getId());
+            txtId.setEditable(false);
             txtName.setText(selectedCustomer.getName());
             txtAddress.setText(selectedCustomer.getAddress());
 
@@ -77,8 +80,6 @@ public class MainFormController {
             }
 
         });
-
-
     }
 
 
@@ -86,32 +87,66 @@ public class MainFormController {
 
     public void btnSave_OnAction(ActionEvent actionEvent) throws IOException {
 
-        if(validated()){
-            Path path = Paths.get(txtImage.getText());
-            byte[] bytes = Files.readAllBytes(path);
-
-            CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), bytes);
-            tblCustomers.getItems().add(customer);
 
 
-            if(!Files.exists(dbPath)){
-                Files.createFile(dbPath);
+            if (btnSave.getText().equals("Save")) {
+
+                if(validated()) {
+
+                    Path path = Paths.get(txtImage.getText());
+                    byte[] bytes = Files.readAllBytes(path);
+
+                    CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), bytes);
+                    tblCustomers.getItems().add(customer);
+
+
+                    if (!Files.exists(dbPath)) {
+                        Files.createFile(dbPath);
+
+                    }
+                    OutputStream fos = Files.newOutputStream(dbPath);
+                    ObjectOutputStream oos = new ObjectOutputStream(fos);
+                    oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
+                    oos.close();
+
+                    clearAll();
+                    loadTable();
+
+                }
+
+            }else {
+
+
+
+                byte[] picture;
+                if (!txtImage.getText().equals("[PICTURE]")){
+                    picture = Files.readAllBytes(Paths.get(txtImage.getText()));
+                }else{
+                    picture = tblCustomers.getSelectionModel().getSelectedItem().getPicture();
+                }
+
+                CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), picture);
+                btnDelete.fire();
+                tblCustomers.getItems().add(customer);
+
+
+                if (!Files.exists(dbPath)) {
+                    Files.createFile(dbPath);
+
+                }
+                OutputStream fos = Files.newOutputStream(dbPath);
+                ObjectOutputStream oos = new ObjectOutputStream(fos);
+                oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
+                oos.close();
+
+                clearAll();
+                loadTable();
+
+
+
+
 
             }
-            OutputStream fos = Files.newOutputStream(dbPath);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
-            oos.close();
-
-            clearAll();
-            loadTable();
-
-
-        }
-
-
-
-
 
 
     }
