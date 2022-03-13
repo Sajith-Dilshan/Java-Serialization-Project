@@ -18,7 +18,7 @@
       <Label layoutX="158.0" layoutY="167.0" text="Name" />
       <Label layoutX="158.0" layoutY="219.0" text="Address" />
       <Label layoutX="164.0" layoutY="262.0" text="Image" />
-      <Button layoutX="276.0" layoutY="310.0" mnemonicParsing="false" onAction="#btnSave_OnAction" text="Save" />
+      <Button fx:id="btnSave" layoutX="276.0" layoutY="310.0" mnemonicParsing="false" onAction="#btnSave_OnAction" text="Save" />
       <TableView fx:id="tblCustomers" layoutX="58.0" layoutY="357.0" prefHeight="220.0" prefWidth="580.0">
         <columns>
           <TableColumn prefWidth="93.0" text="Id" />

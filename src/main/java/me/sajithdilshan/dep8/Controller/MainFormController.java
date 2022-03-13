@@ -26,6 +26,7 @@ public class MainFormController {
     public TextField txtImage;
     public TableView<CustomerTM> tblCustomers;
     public Button btnBrowse;
+    public Button btnSave;
 
 
     Path dbPath = Paths.get("backup/customers.dep8");
@@ -57,6 +58,26 @@ public class MainFormController {
             return new ReadOnlyObjectWrapper<>(imageView);
         });
 
+        loadTable();
+
+
+
+        tblCustomers.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, selectedCustomer) -> {
+
+            btnSave.setText(selectedCustomer == null ? "Save" : "Update");
+            if (selectedCustomer == null) return;
+
+
+            txtId.setText(selectedCustomer.getId());
+            txtName.setText(selectedCustomer.getName());
+            txtAddress.setText(selectedCustomer.getAddress());
+
+            if (selectedCustomer.getPicture() != null) {
+                txtImage.setText("[PICTURE]");
+            }
+
+        });
+
 
     }
 
@@ -83,6 +104,7 @@ public class MainFormController {
             oos.close();
 
             clearAll();
+            loadTable();
 
 
         }
@@ -136,6 +158,18 @@ public class MainFormController {
 
 
 
+    private void loadTable() {
+        try (InputStream is = Files.newInputStream(dbPath, StandardOpenOption.READ);
+             ObjectInputStream ois = new ObjectInputStream(is)) {
+            tblCustomers.getItems().clear();
+            tblCustomers.setItems(FXCollections.observableArrayList((ArrayList<CustomerTM>) ois.readObject()));
+        } catch (IOException | ClassNotFoundException e) {
+            if (!(e instanceof EOFException)) {
+                e.printStackTrace();
+                new Alert(Alert.AlertType.ERROR, "Failed to load customers").showAndWait();
+            }
+        }
+    }
 
 
 
