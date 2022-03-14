@@ -57,7 +57,9 @@ public class MainFormController {
             btnDelete = new Button("Delete");
 
             btnDelete.setOnAction((event -> tblCustomers.getItems().remove(param.getValue())));
+            clearAll();
             return new ReadOnlyObjectWrapper<>(btnDelete);
+
         });
 
         loadTable();
@@ -85,7 +87,7 @@ public class MainFormController {
 
 
 
-    public void btnSave_OnAction(ActionEvent actionEvent) throws IOException {
+    public void btnSave_OnAction(ActionEvent actionEvent) {
 
 
 
@@ -94,23 +96,32 @@ public class MainFormController {
                 if(validated()) {
 
                     Path path = Paths.get(txtImage.getText());
-                    byte[] bytes = Files.readAllBytes(path);
+                    byte[] bytes = new byte[0];
+                    try {
+                        bytes = Files.readAllBytes(path);
+                        CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), bytes);
+                        tblCustomers.getItems().add(customer);
 
-                    CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), bytes);
-                    tblCustomers.getItems().add(customer);
+
+                        if (!Files.exists(dbPath)) {
+                            Files.createFile(dbPath);
+
+                        }
+                        OutputStream fos = Files.newOutputStream(dbPath);
+                        ObjectOutputStream oos = new ObjectOutputStream(fos);
+                        oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
+                        oos.close();
+
+                        clearAll();
+                        loadTable();
 
 
-                    if (!Files.exists(dbPath)) {
-                        Files.createFile(dbPath);
-
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        new Alert(Alert.AlertType.ERROR,"fail to save Customer details ").show();
                     }
-                    OutputStream fos = Files.newOutputStream(dbPath);
-                    ObjectOutputStream oos = new ObjectOutputStream(fos);
-                    oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
-                    oos.close();
 
-                    clearAll();
-                    loadTable();
+
 
                 }
 
@@ -118,29 +129,40 @@ public class MainFormController {
 
 
 
-                byte[] picture;
-                if (!txtImage.getText().equals("[PICTURE]")){
-                    picture = Files.readAllBytes(Paths.get(txtImage.getText()));
-                }else{
-                    picture = tblCustomers.getSelectionModel().getSelectedItem().getPicture();
-                }
 
-                CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), picture);
-                btnDelete.fire();
-                tblCustomers.getItems().add(customer);
+                    try {
+                        byte[] picture;
+                        if (!txtImage.getText().equals("[PICTURE]")){
+                        picture = Files.readAllBytes(Paths.get(txtImage.getText()));
+                        }else{
+                            picture = tblCustomers.getSelectionModel().getSelectedItem().getPicture();
+                        }
+
+                        CustomerTM customer = new CustomerTM(txtId.getText(), txtName.getText(), txtAddress.getText(), picture);
+                        btnDelete.fire();
+                        tblCustomers.getItems().add(customer);
 
 
-                if (!Files.exists(dbPath)) {
-                    Files.createFile(dbPath);
+                        if (!Files.exists(dbPath)) {
+                            Files.createFile(dbPath);
 
-                }
-                OutputStream fos = Files.newOutputStream(dbPath);
-                ObjectOutputStream oos = new ObjectOutputStream(fos);
-                oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
-                oos.close();
+                        }
+                        OutputStream fos = Files.newOutputStream(dbPath);
+                        ObjectOutputStream oos = new ObjectOutputStream(fos);
+                        oos.writeObject(new ArrayList<CustomerTM>(tblCustomers.getItems()));
+                        oos.close();
 
-                clearAll();
-                loadTable();
+                        clearAll();
+                        tblCustomers.getItems().clear();
+                        loadTable();
+
+
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        new Alert(Alert.AlertType.ERROR,"fail to Update Customer details ").show();
+                    }
+
 
 
 
@@ -170,12 +192,11 @@ public class MainFormController {
     }
 
 
-    public void clearAll(){
+    private void clearAll(){
         txtId.clear();
         txtName.clear();
         txtAddress.clear();
         txtImage.clear();
-        tblCustomers.getItems().clear();
         txtId.requestFocus();
     }
 
@@ -194,6 +215,12 @@ public class MainFormController {
 
 
     private void loadTable() {
+        if (!Files.exists(dbPath)) {
+            return;
+
+        }
+
+
         try (InputStream is = Files.newInputStream(dbPath, StandardOpenOption.READ);
              ObjectInputStream ois = new ObjectInputStream(is)) {
             tblCustomers.getItems().clear();
